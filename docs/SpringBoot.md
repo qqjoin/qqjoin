@@ -245,11 +245,28 @@ th:onclick="onload( ${emp.getId()} )"	th接管JavaScript时,${}会有问题，�
 
 **其他增删操作大致与修改一致**
 
-# springboot中切换数据源
+# springboot中整合druid数据源
 
 示例：druid（德鲁伊）
 
 - 先导入依赖
+
+    ```xml
+    <!-- druid数据源 -->
+    <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid</artifactId>
+        <version>1.1.22</version>
+    </dependency>
+    <!--log4j-->
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+    </dependency>
+    ```
+
+    
 
 - 在配置文件中指定`spring.dataSource.type`就ok了（切换其他数据源跟这个一样）
 
@@ -345,6 +362,80 @@ public class MyDruid{
 
 - 启动项目访问`locahost:8080/druid`即可进入首页
 
+# springboot整合mybatis
 
+- 首先导入依赖（`mybatis-spring-boot-starter`），在mvnrepository上搜索即可,或者
 
-__
+    ```xml
+     <!--mybaits-spring-boot-starter-->
+    <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>2.1.2</version>
+    </dependency>
+    ```
+
+- 编写mapper接口
+
+    ```java
+    //mapper告诉spring这是个mybatis中的mapper
+    @Mapper
+    //声明到spring中
+    @Repository
+    public interface DeptDao_1803 {
+        List<Dept> getDepts();
+        void addDept(Dept dept);
+        Dept getDept(Integer id);
+    }
+    ```
+
+- 编写mapper.xml，这写接口的实现可以放到resources下，建议路径`resources/mybatis/mapper`
+
+    ```bash
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <!DOCTYPE mapper
+            PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+            "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="com.jh.test.mapper.DeptDao_1803">
+        <select id="getDepts" resultType="Dept">
+          select * from DEPT_1803
+        </select>
+        <insert id="addDept" parameterType="dept">
+            insert into DEPT_1803 values(#{deptNo},#{dName},#{loc})
+        </insert>
+        <select id="getDept" resultType="dept">
+            select * from DEPT_1803 where DEPTNO = #{id}
+        </select>
+    </mapper>
+    ```
+
+- 在springboot的配置文件中设置mybatis的别名，xml的路径等参数
+
+    ```yaml
+    mybatis:
+      type-aliases-package: com.jh.test.pojo
+      mapper-locations: classpath:mybatis/mapper/*.xml
+    ```
+
+- 创建Controller进行测试
+
+    ```java
+    @RestController
+    public class MybatisController {
+        
+        @Autowired
+        private DeptDao_1803 deptDao_1803;
+        
+        @RequestMapping("list")
+        public List<Dept> getDepts(){
+            List<Dept> depts = deptDao_1803.getDepts();
+            for (Dept d:depts) {
+                System.out.println(d);
+            }
+            return depts;
+        }
+    }
+    ```
+
+- 运行项目了，浏览器请求，看页面是否输出数据
+
