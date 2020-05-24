@@ -241,7 +241,7 @@ th:onclick="onload( ${emp.getId()} )"	th接管JavaScript时,${}会有问题，�
 
 - 修改一个员工
 
-    **![image-20200510200311002](img/\image-20200510200311002.png)**
+    **![image-20200510200311002](img/image-20200510200311002.png)**
 
 **其他增删操作大致与修改一致**
 
@@ -480,7 +480,7 @@ public class MyDruid{
 
 - 创建页面（测试权限和认证）
 
-    ![image-20200512194604098](C:\Users\Jiang Hao\AppData\Roaming\Typora\typora-user-images\image-20200512194604098.png)
+    ![image-20200512194604098](img/image-20200512194604098.png)
 
 - 创建`securityConfig`类继承`WebSecurityConfigurerAdapter`,并在类上加@EnableWebSecurity注解来启动security
 
@@ -518,7 +518,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-![image-20200512195141616](C:\Users\Jiang Hao\AppData\Roaming\Typora\typora-user-images\image-20200512195141616.png)
+![image-20200512195141616](img/image-20200512195141616.png)
 
 
 # springboot解决跨域问题
