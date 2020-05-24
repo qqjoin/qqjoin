@@ -439,3 +439,720 @@ public class MyDruid{
 
 - 运行项目了，浏览器请求，看页面是否输出数据
 
+# spring security(安全)
+
+## 
+
+
+
+## 测试代码
+
+- 导入`spring security`依赖
+
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    ```
+
+- 导入`thymeleaf`和`thymeleaf-springsecuriry`的整合包依赖
+
+    ```xml
+    <dependency>
+        <groupId>org.thymeleaf</groupId>
+        <artifactId>thymeleaf-spring5</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.thymeleaf.extras</groupId>
+        <artifactId>thymeleaf-extras-java8time</artifactId>
+    </dependency>
+    
+     <!--thymeleaf-security-->
+    <dependency>
+        <groupId>org.thymeleaf.extras</groupId>
+        <artifactId>thymeleaf-extras-springsecurity5</artifactId>
+        <version>3.0.4.RELEASE</version>
+    </dependency>
+    ```
+
+    
+
+- 创建页面（测试权限和认证）
+
+    ![image-20200512194604098](C:\Users\Jiang Hao\AppData\Roaming\Typora\typora-user-images\image-20200512194604098.png)
+
+- 创建`securityConfig`类继承`WebSecurityConfigurerAdapter`,并在类上加@EnableWebSecurity注解来启动security
+
+
+```java
+//启用security
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    //链式编程
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        //设置所有人可以访问首页
+        http.authorizeRequests().antMatchers("/").permitAll()
+                                .antMatchers("/v1/**").hasRole("vip1")
+                                .antMatchers("/v2/**").hasRole("vip2")
+                                .antMatchers("/v3/**").hasRole("vip3");
+
+        //没有权限默认转到登录页面
+        http.formLogin();
+        //开启注销功能
+        http.logout().logoutSuccessUrl("/");
+        //防御csrf
+        /*http.csrf().disable();*/
+        
+        //记住我
+        http.rememberMe();
+    }
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        //可以在内存中设置用户账号和密码及权限，可以进行测试
+        auth.inMemoryAuthentication().passwordEncoder(new BCryptPasswordEncoder())
+                .withUser("root").password(new BCryptPasswordEncoder().encode("123123")).roles("vip1","vip2","vip3").and()
+                .withUser("jh").password(new BCryptPasswordEncoder().encode("123123")).roles("vip1");
+    }
+}
+```
+
+![image-20200512195141616](C:\Users\Jiang Hao\AppData\Roaming\Typora\typora-user-images\image-20200512195141616.png)
+
+
+# springboot解决跨域问题
+
+- 可以在指定的方法或类上加`@CrossOrigin`注解
+
+- 可以在配置类中重写`addCorsMappings`方法，这个是全局
+
+    ```java
+    @Configuration
+    public class MyViewConfig implements WebMvcConfigurer {
+        
+        @Override
+        public void addCorsMappings(CorsRegistry registry) {
+            registry.addMapping("*")
+                    .allowedHeaders("*")
+                    .allowedMethods("*")
+                    .allowedOrigins("*");
+        }
+    }
+    ```
+
+    
+# shiro
+
+## 认识shiro
+
+- apache shiro是一个java安全（权限）框架
+- Shiro可以非常容易的开发足够好的应用，其不仅可以用在JAVASE，也可用在JAVAEE
+- Shiro可以完成，认证，授权，加密，会话管理，Web继承，缓存等。
+- 下载地址 http://shiro.apache.org/ 
+
+## hello word !
+
+1. 导入依赖
+
+```xml
+<dependencies>
+    <!--shiro-->
+    <dependency>
+        <groupId>org.apache.shiro</groupId>
+        <artifactId>shiro-core</artifactId>
+        <version>1.5.3</version>
+    </dependency>
+    <!--slf4j-->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>1.7.12</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>1.7.30</version>
+    </dependency>
+
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+    </dependency>
+</dependencies>
+```
+
+
+
+2. 配置文件
+
+log4j.properties
+
+```properties
+# General Apache libraries
+log4j.logger.org.apache=WARN
+
+# Spring
+log4j.logger.org.springframework=WARN
+
+# Default Shiro logging
+log4j.logger.org.apache.shiro=INFO
+
+# Disable verbose logging
+log4j.logger.org.apache.shiro.util.ThreadContext=WARN
+log4j.logger.org.apache.shiro.cache.ehcache.EhCache=WARN
+```
+
+shiro.ini
+
+```ini
+[users]
+# user 'root' with password 'secret' and the 'admin' role
+root = secret, admin
+# user 'guest' with the password 'guest' and the 'guest' role
+guest = guest, guest
+# user 'presidentskroob' with password '12345' ("That's the same combination on
+# my luggage!!!" ;)), and role 'president'
+presidentskroob = 12345, president
+# user 'darkhelmet' with password 'ludicrousspeed' and roles 'darklord' and 'schwartz'
+darkhelmet = ludicrousspeed, darklord, schwartz
+# user 'lonestarr' with password 'vespa' and roles 'goodguy' and 'schwartz'
+lonestarr = vespa, goodguy, schwartz
+
+# -----------------------------------------------------------------------------
+# Roles with assigned permissions
+#
+# Each line conforms to the format defined in the
+# org.apache.shiro.realm.text.TextConfigurationRealm#setRoleDefinitions JavaDoc
+# -----------------------------------------------------------------------------
+[roles]
+# 'admin' role has all permissions, indicated by the wildcard '*'
+admin = *
+# The 'schwartz' role can do anything (*) with any lightsaber:
+schwartz = lightsaber:*
+# The 'goodguy' role is allowed to 'drive' (action) the winnebago (type) with
+# license plate 'eagle5' (instance specific id)
+goodguy = winnebago:drive:eagle5
+```
+
+
+
+3. 编写hello word
+
+Quickstart
+
+```java
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.*;
+import org.apache.shiro.ini.IniSecurityManagerFactory;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.lang.util.Factory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * Simple Quickstart application showing how to use Shiro's API.
+ *
+ * @since 0.9 RC2
+ */
+public class Quickstart {
+
+    private static final transient Logger log = LoggerFactory.getLogger(Quickstart.class);
+
+
+    public static void main(String[] args) {
+
+        // The easiest way to create a Shiro SecurityManager with configured
+        // realms, users, roles and permissions is to use the simple INI config.
+        // We'll do that by using a factory that can ingest a .ini file and
+        // return a SecurityManager instance:
+
+        // Use the shiro.ini file at the root of the classpath
+        // (file: and url: prefixes load from files and urls respectively):
+        Factory<SecurityManager> factory = new IniSecurityManagerFactory("classpath:shiro.ini");
+        SecurityManager securityManager = factory.getInstance();
+
+        // for this simple example quickstart, make the SecurityManager
+        // accessible as a JVM singleton.  Most applications wouldn't do this
+        // and instead rely on their container configuration or web.xml for
+        // webapps.  That is outside the scope of this simple quickstart, so
+        // we'll just do the bare minimum so you can continue to get a feel
+        // for things.
+        SecurityUtils.setSecurityManager(securityManager);
+
+        // Now that a simple Shiro environment is set up, let's see what you can do:
+
+        // get the currently executing user:
+        Subject currentUser = SecurityUtils.getSubject();
+
+        // Do some stuff with a Session (no need for a web or EJB container!!!)
+        Session session = currentUser.getSession();
+        session.setAttribute("someKey", "aValue");
+        String value = (String) session.getAttribute("someKey");
+        if (value.equals("aValue")) {
+            log.info("Retrieved the correct value! [" + value + "]");
+        }
+
+        // let's login the current user so we can check against roles and permissions:
+        if (!currentUser.isAuthenticated()) {
+            UsernamePasswordToken token = new UsernamePasswordToken("lonestarr", "vespa");
+            token.setRememberMe(true);
+            try {
+                currentUser.login(token);
+            } catch (UnknownAccountException uae) {
+                log.info("There is no user with username of " + token.getPrincipal());
+            } catch (IncorrectCredentialsException ice) {
+                log.info("Password for account " + token.getPrincipal() + " was incorrect!");
+            } catch (LockedAccountException lae) {
+                log.info("The account for username " + token.getPrincipal() + " is locked.  " +
+                        "Please contact your administrator to unlock it.");
+            }
+            // ... catch more exceptions here (maybe custom ones specific to your application?
+            catch (AuthenticationException ae) {
+                //unexpected condition?  error?
+            }
+        }
+
+        //say who they are:
+        //print their identifying principal (in this case, a username):
+        log.info("User [" + currentUser.getPrincipal() + "] logged in successfully.");
+
+        //test a role:
+        if (currentUser.hasRole("schwartz")) {
+            log.info("May the Schwartz be with you!");
+        } else {
+            log.info("Hello, mere mortal.");
+        }
+
+        //test a typed permission (not instance-level)
+        if (currentUser.isPermitted("lightsaber:wield")) {
+            log.info("You may use a lightsaber ring.  Use it wisely.");
+        } else {
+            log.info("Sorry, lightsaber rings are for schwartz masters only.");
+        }
+
+        //a (very powerful) Instance Level permission:
+        if (currentUser.isPermitted("winnebago:drive:eagle5")) {
+            log.info("You are permitted to 'drive' the winnebago with license plate (id) 'eagle5'.  " +
+                    "Here are the keys - have fun!");
+        } else {
+            log.info("Sorry, you aren't allowed to drive the 'eagle5' winnebago!");
+        }
+
+        //all done - log out!
+        currentUser.logout();
+
+        System.exit(0);
+    }
+}
+```
+
+
+
+## shiro的Subject
+
+```java
+//获取当前用户
+Subject currentUser = SecurityUtils.getSubject();
+//获取当前用户session
+Session session = currentUser.getSession();
+//设置session值
+session.setAttribute("someKey", "aValue");
+//通过session键获取值
+String value = (String) session.getAttribute("someKey");
+//是否认证
+currentUser.isAuthenticated()
+//token令牌
+UsernamePasswordToken token = new UsernamePasswordToken("lonestarr", "vespa");
+ //记住我
+token.setRememberMe(true);
+//执行登录
+currentUser.login(token);
+//获取当前用户的信息
+currentUser.getPrincipal();
+//当前用户是否拥有schwartz角色
+currentUser.hasRole("schwartz");
+//当前用户是否有某个权限
+currentUser.isPermitted("lightsaber:wield")
+//登出
+currentUser.logout();
+```
+
+
+
+## springboot整合shiro（实现拦截）
+
+1. 导入依赖
+
+```xml
+<!-- shiro-spring-->
+<dependency>
+    <groupId>org.apache.shiro</groupId>
+    <artifactId>shiro-spring</artifactId>
+    <version>1.5.3</version>
+</dependency>
+```
+
+2. 编写UserRealm类
+
+```java
+public class UserRealm extends AuthorizingRealm {
+    //授权
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        AuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo();
+        System.out.println("这里执行了授权");
+        return authorizationInfo;
+    }
+
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        AuthenticationInfo authenticationInfo = new SimpleAuthenticationInfo();
+        System.out.println("这里执行了认证");
+        return authenticationInfo;
+    }
+}
+```
+
+3. ShiroConfig配置类
+
+```java
+@Configuration
+public class ShiroConfig {
+    //shirofilterfactorbean
+    @Bean
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(@Qualifier("securityManager") DefaultWebSecurityManager securityManager){
+        ShiroFilterFactoryBean bean = new ShiroFilterFactoryBean();
+        //设置安全管理器
+        bean.setSecurityManager(securityManager);
+        Map<String, String> filterChainDefinitionMap = new LinkedHashMap<>();
+        /*
+        anon    所有人可以访问
+        authc   认证后访问
+        user    必须拥有记住我后访问
+        perms   拥有某个资源的访问权限后访问
+        role    拥有某个角色访问
+         */
+        filterChainDefinitionMap.put("/add","anon");
+        filterChainDefinitionMap.put("/update","authc");
+
+        bean.setFilterChainDefinitionMap(filterChainDefinitionMap);
+        //设置跳转页面
+        bean.setLoginUrl("/login");
+
+
+        return bean;
+    }
+    //default
+    @Bean(name="securityManager")
+    public DefaultWebSecurityManager defaultWebSecurityManager(@Qualifier("userRealm") UserRealm userRealm){
+        DefaultWebSecurityManager defaultWebSecurityManager = new DefaultWebSecurityManager();
+        defaultWebSecurityManager.setRealm(userRealm);
+        return new DefaultWebSecurityManager();
+    }
+    //realm
+    @Bean
+    public UserRealm userRealm(){
+        return new UserRealm();
+    }
+
+}
+```
+
+4. 编写controller实现跳转
+
+```bash
+@Controller
+public class MyController {
+    @RequestMapping("/index")
+    public String index(Model model){
+        System.out.println(1111);
+        model.addAttribute("msg","hello,shiro");
+        return "index";
+    }
+    @RequestMapping("/add")
+    public String add(){
+        return "user/add";
+    }
+    @RequestMapping("/update")
+    public String update(){
+        return "user/update";
+    }
+    @RequestMapping("/login")
+    public String login(){
+        return "user/login";
+    }
+}
+```
+
+html页面就不写了，index页面有两个按钮可以跳转到add.html,和update.html
+
+## shiro的用户认证
+
+1. 在controller中编写登录逻辑
+
+```java
+ @RequestMapping("/toLogin")
+    public String toLogin(String username,String password,Model model){
+        //获取当前用户
+        Subject subject =   SecurityUtils.getSubject();
+        //获得令牌
+        UsernamePasswordToken token = new UsernamePasswordToken(username,password);   
+        try {
+            //登录这个令牌
+            subject.login(token);
+            return "index";
+        }catch(UnknownAccountException e){
+            model.addAttribute("msg","账号不存在");
+            return "user/login";
+        }catch (IncorrectCredentialsException e){
+            model.addAttribute("msg","密码不正确");
+            return "user/login";
+        }
+    }
+```
+
+2. 在UserRealm中写
+
+```java
+@Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        
+        
+        System.out.println("执行了认证");
+        String username = "root";
+        String password = "123456";
+        UsernamePasswordToken token = (UsernamePasswordToken)authenticationToken;
+        //如果账号不存在
+        if(!token.getUsername().equals(username)){
+            //返回null会默认抛出UnknownAccountException异常
+            return null;            //UnknownAccountException
+        }
+        return new SimpleAuthenticationInfo("",password,"");
+        
+        
+    }
+```
+
+
+
+## shiro整合mybatis(其实就是以前的操作)
+
+1. 导入依赖
+
+```xml
+<!--mybaits-->
+<dependency>
+    <groupId>org.mybatis.spring.boot</groupId>
+    <artifactId>mybatis-spring-boot-starter</artifactId>
+    <version>2.1.2</version>
+</dependency>
+<!--druid-->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.1.22</version>
+</dependency>
+<!--oracle驱动-->
+<dependency>
+    <groupId>com.oracle</groupId>
+    <artifactId>ojdbc6</artifactId>
+    <version>11.2.0.3.0</version>
+</dependency>
+```
+
+2. 编写dao层和xml文件
+
+UserDao.java
+
+```java
+@Mapper
+@Repository
+public interface UserDao {
+    public User queryUserByName(String userName);
+}
+```
+
+UserDao.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jh.mapper.UserDao">
+
+    <select id="queryUserByName" parameterType="String" resultType="user">
+        select * from user_shiro where username=#{username}
+    </select>
+
+</mapper>
+```
+
+
+
+3. 编写配置文件
+
+```properties
+spring.thymeleaf.cache=false
+
+spring.datasource.url=jdbc:oracle:thin:@localhost:1521:orcl
+spring.datasource.username=smk
+spring.datasource.password=smk
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.type=com.alibaba.druid.pool.DruidDataSource
+
+
+mybatis.type-aliases-package=com.jh.pojo
+mybatis.mapper-locations=classpath:mybatis/*.xml
+```
+
+4. UserRealm
+
+```java
+//认证
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        System.out.println("=================>执行了认证");
+        UsernamePasswordToken token = (UsernamePasswordToken)authenticationToken;
+        //交互数据库（多了这个）
+        User user = userDao.queryUserByName(token.getUsername());
+        if(user==null){
+            return null;
+        }
+
+        return new SimpleAuthenticationInfo(user,user.getPassWord(),"");
+    }
+```
+
+## shiro授权
+
+可以在表中加权限字段
+
+- shiroConfig这个是shiro的配置文件
+
+```java
+@Configuration
+public class ShiroConfig {
+    //ShiroFilterFactoryBean
+    @Bean
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(@Qualifier("securityManager") DefaultWebSecurityManager securityManager){
+        ShiroFilterFactoryBean bean = new ShiroFilterFactoryBean();
+        //设置安全管理器
+        bean.setSecurityManager(securityManager);
+        HashMap<String, String> map = new LinkedHashMap<>();
+         /*
+        anon    所有人可以访问
+        authc   认证后访问
+        user    必须拥有记住我后访问
+        perms   拥有某个资源的访问权限后访问
+        role    拥有某个角色访问
+         */
+        map.put("/index","anon");//anon允许所有人访问
+        
+        
+        
+//*********************在这里配置perms*******************************        
+        map.put("/add","perms[user:add]");//
+        map.put("/update","perms[user:update]");//
+//*****************************************************************
+
+
+
+        bean.setFilterChainDefinitionMap(map);
+        //如果没有认证跳到哪个页面
+        bean.setLoginUrl("login");
+        bean.setUnauthorizedUrl("unAuthorized");
+
+        return bean;
+    }
+    //defaultWebSecurityManager
+    @Bean(name="securityManager")
+    public DefaultWebSecurityManager defaultWebSecurityManager(@Qualifier("userRealm") UserRealm realm){
+        return new DefaultWebSecurityManager(realm);
+    }
+    
+    //realm
+    @Bean
+    public UserRealm userRealm(){
+        return new UserRealm();
+    }
+	//配置shiro与thymeleaf整合
+    @Bean
+    public ShiroDialect shiroDialect(){
+        return new ShiroDialect();
+    }
+}
+```
+
+- 在UserRealm的中配置
+
+```java
+//授权
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        System.out.println("==============>用户执行了授权");
+        SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+        //获取当前的用户
+        Subject subject = SecurityUtils.getSubject();
+        //给当前用户授权
+        info.addStringPermission(((User)subject.getPrincipal()).getQx());
+        return info;
+    }
+```
+
+## shiro与thymeleaf整合
+
+1. 导入依赖
+
+```xml
+<!--thymeleaf-shiro-->
+<dependency>
+    <groupId>com.github.theborakompanioni</groupId>
+    <artifactId>thymeleaf-extras-shiro</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
+2. 在shiro的配置文件中注入`ShiroDialect`
+
+```java
+@Bean
+public ShiroDialect shiroDialect(){
+    return new ShiroDialect();
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
